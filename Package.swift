@@ -33,9 +33,7 @@ let package = Package(
         .target(
             name: "Package Graph",
             dependencies: [
-                .product(name: "Graph Primitive", package: "swift-graph"),
-                .product(name: "Graph Topological", package: "swift-graph"),
-                .product(name: "Graph SCC", package: "swift-graph"),
+                .product(name: "Graph", package: "swift-graph"),
                 .product(name: "SPM Standard", package: "swift-spm-standard"),
                 .product(name: "Package Manager", package: "swift-package-manager"),
                 .product(name: "File System", package: "swift-file-system"),
