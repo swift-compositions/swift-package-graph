@@ -23,7 +23,7 @@ extension `Package.Graph`.Unit {
     func `Single package, no deps`() throws {
         let manifest = Package.Manifest(
             name: "swift-leaf",
-            toolsVersion: "6.3",
+            toolsVersion: Version.Tools(major: 6, minor: 3),
             dependencies: []
         )
         let workspace = Package.Workspace(root: "/tmp", manifests: [manifest])
@@ -39,7 +39,7 @@ extension `Package.Graph`.Unit {
     func `Linear chain A→B→C: reverse-dep queries`() throws {
         let a = Package.Manifest(
             name: "swift-a",
-            toolsVersion: "6.3",
+            toolsVersion: Version.Tools(major: 6, minor: 3),
             dependencies: [
                 Package.Dependency(
                     source: .path("../swift-b"),
@@ -50,7 +50,7 @@ extension `Package.Graph`.Unit {
         )
         let b = Package.Manifest(
             name: "swift-b",
-            toolsVersion: "6.3",
+            toolsVersion: Version.Tools(major: 6, minor: 3),
             dependencies: [
                 Package.Dependency(
                     source: .path("../swift-c"),
@@ -59,7 +59,7 @@ extension `Package.Graph`.Unit {
                 )
             ]
         )
-        let c = Package.Manifest(name: "swift-c", toolsVersion: "6.3")
+        let c = Package.Manifest(name: "swift-c", toolsVersion: Version.Tools(major: 6, minor: 3))
 
         let workspace = Package.Workspace(root: "/tmp", manifests: [a, b, c])
         let graph = try Package.Graph(workspace)
@@ -80,7 +80,7 @@ extension `Package.Graph`.Unit {
     func `Diamond A→B, A→C, B→D, C→D: D's dependents collapse to wave 2`() throws {
         let a = Package.Manifest(
             name: "swift-a",
-            toolsVersion: "6.3",
+            toolsVersion: Version.Tools(major: 6, minor: 3),
             dependencies: [
                 .init(source: .path("../swift-b"), name: "swift-b", products: ["B"]),
                 .init(source: .path("../swift-c"), name: "swift-c", products: ["C"]),
@@ -88,19 +88,19 @@ extension `Package.Graph`.Unit {
         )
         let b = Package.Manifest(
             name: "swift-b",
-            toolsVersion: "6.3",
+            toolsVersion: Version.Tools(major: 6, minor: 3),
             dependencies: [
                 .init(source: .path("../swift-d"), name: "swift-d", products: ["D"])
             ]
         )
         let c = Package.Manifest(
             name: "swift-c",
-            toolsVersion: "6.3",
+            toolsVersion: Version.Tools(major: 6, minor: 3),
             dependencies: [
                 .init(source: .path("../swift-d"), name: "swift-d", products: ["D"])
             ]
         )
-        let d = Package.Manifest(name: "swift-d", toolsVersion: "6.3")
+        let d = Package.Manifest(name: "swift-d", toolsVersion: Version.Tools(major: 6, minor: 3))
 
         let workspace = Package.Workspace(root: "/tmp", manifests: [a, b, c, d])
         let graph = try Package.Graph(workspace)
@@ -119,20 +119,20 @@ extension `Package.Graph`.Unit {
         let manifests: [Package.Manifest] = [
             .init(
                 name: "a",
-                toolsVersion: "6.3",
+                toolsVersion: Version.Tools(major: 6, minor: 3),
                 dependencies: [.init(source: .path("../b"), name: "b", products: ["B"])]
             ),
             .init(
                 name: "b",
-                toolsVersion: "6.3",
+                toolsVersion: Version.Tools(major: 6, minor: 3),
                 dependencies: [.init(source: .path("../c"), name: "c", products: ["C"])]
             ),
             .init(
                 name: "c",
-                toolsVersion: "6.3",
+                toolsVersion: Version.Tools(major: 6, minor: 3),
                 dependencies: [.init(source: .path("../d"), name: "d", products: ["D"])]
             ),
-            .init(name: "d", toolsVersion: "6.3"),
+            .init(name: "d", toolsVersion: Version.Tools(major: 6, minor: 3)),
         ]
         let workspace = Package.Workspace(root: "/tmp", manifests: manifests)
         let graph = try Package.Graph(workspace)
@@ -165,19 +165,19 @@ extension `Package.Graph`.Unit {
 
         let root = Package.Manifest(
             name: "swift-root",
-            toolsVersion: "6.3",
+            toolsVersion: Version.Tools(major: 6, minor: 3),
             dependencies: [
                 .init(source: .path("../swift-middle"), name: "swift-middle", products: ["Middle"])
             ]
         )
         let middle = Package.Manifest(
             name: "swift-middle",
-            toolsVersion: "6.3",
+            toolsVersion: Version.Tools(major: 6, minor: 3),
             dependencies: [
                 .init(source: .path("../swift-leaf"), name: "swift-leaf", products: ["Leaf"])
             ]
         )
-        let leaf = Package.Manifest(name: "swift-leaf", toolsVersion: "6.3")
+        let leaf = Package.Manifest(name: "swift-leaf", toolsVersion: Version.Tools(major: 6, minor: 3))
 
         let workspace = Package.Workspace(root: "/tmp", manifests: [root, middle, leaf])
         let graph = try Package.Graph(workspace)
@@ -191,7 +191,7 @@ extension `Package.Graph`.Unit {
 
         let a = Package.Manifest(
             name: "a",
-            toolsVersion: "6.3",
+            toolsVersion: Version.Tools(major: 6, minor: 3),
             dependencies: [
                 .init(source: .path("../b"), name: "b", products: ["B"]),
                 .init(source: .path("../c"), name: "c", products: ["C"]),
@@ -199,15 +199,15 @@ extension `Package.Graph`.Unit {
         )
         let b = Package.Manifest(
             name: "b",
-            toolsVersion: "6.3",
+            toolsVersion: Version.Tools(major: 6, minor: 3),
             dependencies: [.init(source: .path("../d"), name: "d", products: ["D"])]
         )
         let c = Package.Manifest(
             name: "c",
-            toolsVersion: "6.3",
+            toolsVersion: Version.Tools(major: 6, minor: 3),
             dependencies: [.init(source: .path("../d"), name: "d", products: ["D"])]
         )
-        let d = Package.Manifest(name: "d", toolsVersion: "6.3")
+        let d = Package.Manifest(name: "d", toolsVersion: Version.Tools(major: 6, minor: 3))
 
         let workspace = Package.Workspace(root: "/tmp", manifests: [a, b, c, d])
         let graph = try Package.Graph(workspace)
@@ -229,12 +229,12 @@ extension `Package.Graph`.Unit {
 
         let a = Package.Manifest(
             name: "a",
-            toolsVersion: "6.3",
+            toolsVersion: Version.Tools(major: 6, minor: 3),
             dependencies: [.init(source: .path("../b"), name: "b", products: ["B"])]
         )
         let b = Package.Manifest(
             name: "b",
-            toolsVersion: "6.3",
+            toolsVersion: Version.Tools(major: 6, minor: 3),
             dependencies: [.init(source: .path("../a"), name: "a", products: ["A"])]
         )
 
@@ -255,10 +255,10 @@ extension `Package.Graph`.Unit {
 
     @Test
     func `Cycles: acyclic graph returns empty`() throws {
-        let leaf = Package.Manifest(name: "leaf", toolsVersion: "6.3")
+        let leaf = Package.Manifest(name: "leaf", toolsVersion: Version.Tools(major: 6, minor: 3))
         let root = Package.Manifest(
             name: "root",
-            toolsVersion: "6.3",
+            toolsVersion: Version.Tools(major: 6, minor: 3),
             dependencies: [.init(source: .path("../leaf"), name: "leaf", products: ["Leaf"])]
         )
         let workspace = Package.Workspace(root: "/tmp", manifests: [root, leaf])
@@ -272,12 +272,12 @@ extension `Package.Graph`.Unit {
 
         let a = Package.Manifest(
             name: "a",
-            toolsVersion: "6.3",
+            toolsVersion: Version.Tools(major: 6, minor: 3),
             dependencies: [.init(source: .path("../b"), name: "b", products: ["B"])]
         )
         let b = Package.Manifest(
             name: "b",
-            toolsVersion: "6.3",
+            toolsVersion: Version.Tools(major: 6, minor: 3),
             dependencies: [.init(source: .path("../a"), name: "a", products: ["A"])]
         )
         let workspace = Package.Workspace(root: "/tmp", manifests: [a, b])
@@ -293,7 +293,7 @@ extension `Package.Graph`.Unit {
 
         let a = Package.Manifest(
             name: "a",
-            toolsVersion: "6.3",
+            toolsVersion: Version.Tools(major: 6, minor: 3),
             dependencies: [.init(source: .path("./a"), name: "a", products: ["A"])]
         )
         let workspace = Package.Workspace(root: "/tmp", manifests: [a])
@@ -306,15 +306,15 @@ extension `Package.Graph`.Unit {
 
     @Test
     func `SCC: linear chain yields singleton components`() throws {
-        let leaf = Package.Manifest(name: "leaf", toolsVersion: "6.3")
+        let leaf = Package.Manifest(name: "leaf", toolsVersion: Version.Tools(major: 6, minor: 3))
         let middle = Package.Manifest(
             name: "middle",
-            toolsVersion: "6.3",
+            toolsVersion: Version.Tools(major: 6, minor: 3),
             dependencies: [.init(source: .path("../leaf"), name: "leaf", products: ["Leaf"])]
         )
         let root = Package.Manifest(
             name: "root",
-            toolsVersion: "6.3",
+            toolsVersion: Version.Tools(major: 6, minor: 3),
             dependencies: [.init(source: .path("../middle"), name: "middle", products: ["Middle"])]
         )
 
@@ -333,12 +333,12 @@ extension `Package.Graph`.Unit {
     func `SCC: two-cycle yields one component`() throws {
         let a = Package.Manifest(
             name: "a",
-            toolsVersion: "6.3",
+            toolsVersion: Version.Tools(major: 6, minor: 3),
             dependencies: [.init(source: .path("../b"), name: "b", products: ["B"])]
         )
         let b = Package.Manifest(
             name: "b",
-            toolsVersion: "6.3",
+            toolsVersion: Version.Tools(major: 6, minor: 3),
             dependencies: [.init(source: .path("../a"), name: "a", products: ["A"])]
         )
         let workspace = Package.Workspace(root: "/tmp", manifests: [a, b])
@@ -351,10 +351,10 @@ extension `Package.Graph`.Unit {
 
     @Test
     func `DOT: linear chain emits sorted nodes and edges`() throws {
-        let leaf = Package.Manifest(name: "swift-leaf", toolsVersion: "6.3")
+        let leaf = Package.Manifest(name: "swift-leaf", toolsVersion: Version.Tools(major: 6, minor: 3))
         let root = Package.Manifest(
             name: "swift-root",
-            toolsVersion: "6.3",
+            toolsVersion: Version.Tools(major: 6, minor: 3),
             dependencies: [
                 .init(source: .path("../swift-leaf"), name: "swift-leaf", products: ["Leaf"])
             ]
@@ -378,10 +378,10 @@ extension `Package.Graph`.Unit {
 
         let local = Package.Manifest(
             name: "local",
-            toolsVersion: "6.3",
+            toolsVersion: Version.Tools(major: 6, minor: 3),
             dependencies: [
                 .init(
-                    source: .url("https://example.invalid/external", from: "1.0.0"),
+                    source: .url("https://example.invalid/external", from: Version.Semantic(major: 1, minor: 0, patch: 0)),
                     name: "external",
                     products: ["External"]
                 )

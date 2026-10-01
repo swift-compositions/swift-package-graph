@@ -12,19 +12,19 @@ extension Package {
         @usableFromInline
         internal let reverseAdjacency: [Package.Name: Swift.Set<Package.Name>]
 
-        internal let sequential: Graph_Primitive.Graph.Sequential<NodeIdentity, Package.Manifest>
+        internal let sequential: Graph::Graph.Sequential<NodeIdentity, Package.Manifest>
 
-        internal let nodeByName: [Package.Name: Graph_Primitive.Graph.Node<NodeIdentity>]
+        internal let nodeByName: [Package.Name: Graph::Graph.Node<NodeIdentity>]
 
-        internal let nameByNode: [Graph_Primitive.Graph.Node<NodeIdentity>: Package.Name]
+        internal let nameByNode: [Graph::Graph.Node<NodeIdentity>: Package.Name]
 
         public init(_ workspace: borrowing Workspace) throws(Self.Error) {
             var manifestByName: [Package.Name: Package.Manifest] = [:]
             var forwardAdjacency: [Package.Name: Swift.Set<Package.Name>] = [:]
             var reverseAdjacency: [Package.Name: Swift.Set<Package.Name>] = [:]
-            var nodeByName: [Package.Name: Graph_Primitive.Graph.Node<NodeIdentity>] = [:]
-            var nameByNode: [Graph_Primitive.Graph.Node<NodeIdentity>: Package.Name] = [:]
-            var builder = Graph_Primitive.Graph.Sequential<NodeIdentity, Package.Manifest>.Builder()
+            var nodeByName: [Package.Name: Graph::Graph.Node<NodeIdentity>] = [:]
+            var nameByNode: [Graph::Graph.Node<NodeIdentity>: Package.Name] = [:]
+            var builder = Graph::Graph.Sequential<NodeIdentity, Package.Manifest>.Builder()
 
             for manifest in workspace.manifests {
                 manifestByName[manifest.name] = manifest
@@ -121,10 +121,10 @@ extension Package.Graph {
 extension Package.Graph {
 
     internal func makeAdjacencyExtract()
-        -> Graph_Primitive.Graph.Adjacency.Extract<
+        -> Graph::Graph.Adjacency.Extract<
             Package.Manifest,
             NodeIdentity,
-            [Graph_Primitive.Graph.Node<NodeIdentity>]
+            [Graph::Graph.Node<NodeIdentity>]
         >
     {
         let nodeByName = self.nodeByName
