@@ -39,7 +39,7 @@ extension Package.Workspace {
             )
         }
 
-        let swiftExecutable = configuration.swiftExecutable ?? defaultSwiftExecutable()
+        let swiftExecutable = configuration.swiftExecutable?.string ?? Package.Manager.launcher
         let concurrencyBound = Swift.max(1, configuration.maxConcurrentLoads)
 
         let manifests = try await loadManifests(
@@ -111,16 +111,12 @@ extension Package.Workspace {
 
 extension Package.Workspace {
 
-    private static func defaultSwiftExecutable() -> Paths.Path {
-        "/usr/bin/env"
-    }
-
     private static func loadManifest(
         packageDirectory: Paths.Path,
-        swiftExecutable: Paths.Path
+        swiftExecutable: Swift.String
     ) throws(Self.Error) -> Package.Manifest {
         do throws(Package.Manager.Error) {
-            return try Package.Manager(executable: swiftExecutable.string)
+            return try Package.Manager(executable: swiftExecutable)
                 .manifest(at: packageDirectory.string)
         } catch {
             switch error {
@@ -187,7 +183,7 @@ extension Package.Workspace {
 
     private static func loadManifests(
         packageDirectories: [Paths.Path],
-        swiftExecutable: Paths.Path,
+        swiftExecutable: Swift.String,
         concurrencyBound: Swift.Int
     ) async throws(Self.Error) -> [Package.Manifest] {
         var results: [Package.Manifest] = []
@@ -204,7 +200,7 @@ extension Package.Workspace {
 
     private static func loadChunk(
         _ chunk: [Paths.Path],
-        swiftExecutable: Paths.Path
+        swiftExecutable: Swift.String
     ) async throws(Self.Error) -> [Package.Manifest] {
         let exec = swiftExecutable
         do {
