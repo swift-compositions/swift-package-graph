@@ -1,3 +1,4 @@
+import Environment
 import File_System
 import Paths
 import Testing
@@ -135,7 +136,9 @@ extension `Package.Workspace.discover`.Integration {
 
 private func makeTempDirectory() throws -> Paths.Path {
     let suffix = Swift.String(Swift.Int.random(in: 0...Swift.Int.max), radix: 36)
-    let path = try Paths.Path("/tmp/package-graph-tests-\(suffix)")
+    let environment = Environment.Snapshot.current()
+    let base = try Paths.Path(environment["TMPDIR"] ?? environment["TEMP"] ?? "/tmp")
+    let path = base / Paths.Path.Component(stringLiteral: "package-graph-tests-\(suffix)")
     let dir = File.Directory(path)
     try dir.create.recursive()
     return path

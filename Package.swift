@@ -25,6 +25,7 @@ let package = Package(
             url: "https://github.com/swift-compositions/swift-package-manager.git",
             branch: "main"
         ),
+        .package(url: "https://github.com/swift-compositions/swift-environment.git", branch: "main"),
         .package(url: "https://github.com/swift-compositions/swift-file-system.git", branch: "main"),
         .package(url: "https://github.com/swift-compositions/swift-paths.git", branch: "main"),
         .package(url: "https://github.com/swift-compositions/swift-arguments.git", branch: "main"),
@@ -59,6 +60,7 @@ let package = Package(
             name: "Package Graph Tests",
             dependencies: [
                 "Package Graph",
+                .product(name: "Environment", package: "swift-environment"),
                 .product(name: "File System", package: "swift-file-system"),
             ]
         ),
