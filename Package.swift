@@ -18,7 +18,8 @@ let package = Package(
     dependencies: [
         .package(
             url: "https://github.com/swift-molecules/swift-graph.git",
-            branch: "main"
+            branch: "main",
+            traits: ["Algorithms"]
         ),
         .package(url: "https://github.com/swift-standards/swift-spm-standard.git", branch: "main"),
         .package(
