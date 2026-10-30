@@ -210,7 +210,13 @@ extension `Package.Manifest.Rewrite` {
 
     @Test
     func `the organizations parse from the array institute organizations prints`() {
-        let roster = #"["swift-institute","swift-atoms","swift-molecules","swift-standards","swift-arm-ltd","swift-bipm","swift-ecma","swift-iec","swift-ieee","swift-ietf","swift-incits","swift-intel","swift-iso","swift-linux-foundation","swift-microsoft","swift-riscv","swift-w3c","swift-whatwg","swift-compositions"]"#
+        let names = [
+            "swift-institute", "swift-atoms", "swift-molecules", "swift-standards", "swift-arm-ltd",
+            "swift-bipm", "swift-ecma", "swift-iec", "swift-ieee", "swift-ietf", "swift-incits",
+            "swift-intel", "swift-iso", "swift-linux-foundation", "swift-microsoft", "swift-riscv",
+            "swift-w3c", "swift-whatwg", "swift-compositions",
+        ]
+        let roster = "[" + names.map { "\"\($0)\"" }.joined(separator: ",") + "]"
 
         let organizations = Package.Manifest.Rewrite.organizations(parsing: roster + "\n")
 
@@ -227,4 +233,3 @@ extension `Package.Manifest.Rewrite` {
         #expect(Package.Manifest.Rewrite.organizations(parsing: input) == nil)
     }
 }
-
