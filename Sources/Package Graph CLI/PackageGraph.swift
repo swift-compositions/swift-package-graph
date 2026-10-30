@@ -20,6 +20,7 @@ enum PackageGraph: Command.`Protocol`, Equatable {
     case dot(Dot)
     case dependentsOf(DependentsOf)
     case dependenciesOf(DependenciesOf)
+    case traitMismatches(TraitMismatches)
 }
 
 extension PackageGraph {
@@ -75,6 +76,12 @@ extension PackageGraph {
                     initial: { DependenciesOf() },
                     map: Self.dependenciesOf
                 )
+                Command.Subcommand.Case(
+                    "trait-mismatches",
+                    help: .init(abstract: "List trait requests the resolver never sees (#10749)."),
+                    initial: { TraitMismatches() },
+                    map: Self.traitMismatches
+                )
             }
         }
     }
@@ -108,6 +115,10 @@ extension PackageGraph {
         case .dependenciesOf(var c):
             try await c.run()
             self = .dependenciesOf(c)
+
+        case .traitMismatches(var c):
+            try await c.run()
+            self = .traitMismatches(c)
         }
     }
 }
@@ -555,6 +566,81 @@ extension Main {
         case .tokenizer(let reason, _):
             print("package-graph: \(reason)")
             exit(64)
+        }
+    }
+}
+
+extension PackageGraph {
+    struct TraitMismatches: Command.`Protocol`, Equatable {
+        var root: Swift.String
+
+        init(root: Swift.String = "") {
+            self.root = root
+        }
+    }
+}
+
+extension PackageGraph.TraitMismatches {
+    static var configuration: Command.Configuration {
+        Command.Configuration(
+            name: "trait-mismatches",
+            abstract: "List trait requests the resolver never sees (#10749)."
+        )
+    }
+
+    static var schema: Command.Schema.Definition<Self> {
+        Command.Schema.Definition<Self> {
+            Command.Option(
+                \.root,
+                name: Names.root,
+                help: .init(abstract: "Workspace root (default $PWD).")
+            )
+        }
+    }
+
+    /// Prints one line per mismatch and exits 1 when any mismatch misses a dependency or any
+    /// manifest could not be evaluated.
+    mutating func run() async throws(Command.Error) {
+        let rootPath = PackageGraph.resolveRoot(root)
+        let evaluations: [Package.Manifest.Evaluation]
+        let failures: [Paths.Path]
+        do throws(Package.Workspace.Error) {
+            (evaluations, failures) = try await Package.Workspace.evaluations(at: rootPath)
+        } catch {
+            PackageGraph.printError("package-graph: workspace error (\(error.kind)): \(error.detail)")
+            PackageGraph.platformExit(2)
+        }
+        let mismatches = Package.Trait.Mismatch.all(in: evaluations)
+        var missing = 0
+        for mismatch in mismatches {
+            let traits = mismatch.traits.map(\.name).joined(separator: ", ")
+            let kind: Swift.String
+            switch mismatch.kind {
+            case .unused:
+                kind = "unused"
+            case .guarded(let guards):
+                kind = "used only under \(guards.sorted().joined(separator: ", "))"
+            }
+            let consequences: Swift.String
+            switch mismatch.consequences {
+            case nil:
+                consequences = "dependency not in workspace"
+            case let identities? where identities.isEmpty:
+                consequences = "misses nothing"
+            case let identities?:
+                missing += 1
+                consequences = "misses \(identities.map(\.underlying).joined(separator: ", "))"
+            }
+            print("\(mismatch.package.underlying) -> \(mismatch.dependency.underlying) [\(traits)]: \(kind); \(consequences)")
+        }
+        for failure in failures {
+            print("not evaluated: \(failure.string)")
+        }
+        print(
+            "\(evaluations.count) packages, \(failures.count) not evaluated, \(mismatches.count) mismatches, \(missing) that miss a dependency"
+        )
+        if missing > 0 || !failures.isEmpty {
+            PackageGraph.platformExit(1)
         }
     }
 }

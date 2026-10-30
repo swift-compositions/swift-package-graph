@@ -45,10 +45,55 @@ extension Package.Workspace {
         let manifests = try await loadManifests(
             packageDirectories: packageDirectories,
             swiftExecutable: swiftExecutable,
-            concurrencyBound: concurrencyBound
+            concurrencyBound: concurrencyBound,
+            load: { manager, directory throws(Package.Manager.Error) in
+                try manager.manifest(at: directory)
+            }
         )
 
         return Package.Workspace(root: root, manifests: manifests)
+    }
+
+    /// The trait-aware evaluation of every package under `root`, found as `discover` finds them,
+    /// and the directories whose manifest could not be evaluated.
+    ///
+    /// Unlike `discover`, one manifest that fails to evaluate does not fail the rest: an audit
+    /// reports it instead, so that a clean result cannot hide packages it never read.
+    public static func evaluations(
+        at root: Paths.Path,
+        configuration: Configuration = .init()
+    ) async throws(Self.Error) -> (evaluations: [Package.Manifest.Evaluation], failures: [Paths.Path]) {
+        guard directoryExists(at: root) else {
+            throw .init(kind: .rootDoesNotExist, detail: root.string)
+        }
+        let packageDirectories = findPackageDirectories(
+            under: root,
+            maxDepth: configuration.maxDepth
+        )
+        guard !packageDirectories.isEmpty else {
+            throw .init(
+                kind: .noPackagesFound,
+                detail:
+                    "no Package.swift found within depth \(configuration.maxDepth) of \(root.string)"
+            )
+        }
+        let results = try await loadManifests(
+            packageDirectories: packageDirectories,
+            swiftExecutable: configuration.swiftExecutable?.string ?? Package.Manager.launcher,
+            concurrencyBound: Swift.max(1, configuration.maxConcurrentLoads),
+            load: { manager, directory throws(Package.Manager.Error) in
+                Swift.Result { () throws(Package.Manager.Error) in try manager.evaluation(at: directory) }
+            }
+        )
+        var evaluations: [Package.Manifest.Evaluation] = []
+        var failures: [Paths.Path] = []
+        for (directory, result) in Swift.zip(packageDirectories, results) {
+            switch result {
+            case .success(let evaluation): evaluations.append(evaluation)
+            case .failure: failures.append(directory)
+            }
+        }
+        return (evaluations, failures)
     }
 }
 
@@ -111,13 +156,13 @@ extension Package.Workspace {
 
 extension Package.Workspace {
 
-    private static func loadManifest(
+    private static func loadManifest<Loaded>(
         packageDirectory: Paths.Path,
-        swiftExecutable: Swift.String
-    ) throws(Self.Error) -> Package.Manifest {
+        swiftExecutable: Swift.String,
+        load: (Package.Manager, Swift.String) throws(Package.Manager.Error) -> Loaded
+    ) throws(Self.Error) -> Loaded {
         do throws(Package.Manager.Error) {
-            return try Package.Manager(executable: swiftExecutable)
-                .manifest(at: packageDirectory.string)
+            return try load(Package.Manager(executable: swiftExecutable), packageDirectory.string)
         } catch {
             switch error {
             case .execution:
@@ -181,42 +226,45 @@ extension Package.Workspace {
         }
     }
 
-    private static func loadManifests(
+    private static func loadManifests<Loaded: Swift.Sendable>(
         packageDirectories: [Paths.Path],
         swiftExecutable: Swift.String,
-        concurrencyBound: Swift.Int
-    ) async throws(Self.Error) -> [Package.Manifest] {
-        var results: [Package.Manifest] = []
+        concurrencyBound: Swift.Int,
+        load: @escaping @Sendable (Package.Manager, Swift.String) throws(Package.Manager.Error) -> Loaded
+    ) async throws(Self.Error) -> [Loaded] {
+        var results: [Loaded] = []
         var index = 0
         while index < packageDirectories.count {
             let upperIndex = Swift.min(index + concurrencyBound, packageDirectories.count)
             let chunk = Swift.Array(packageDirectories[index..<upperIndex])
-            let chunkResults = try await loadChunk(chunk, swiftExecutable: swiftExecutable)
+            let chunkResults = try await loadChunk(chunk, swiftExecutable: swiftExecutable, load: load)
             results.append(contentsOf: chunkResults)
             index = upperIndex
         }
         return results
     }
 
-    private static func loadChunk(
+    private static func loadChunk<Loaded: Swift.Sendable>(
         _ chunk: [Paths.Path],
-        swiftExecutable: Swift.String
-    ) async throws(Self.Error) -> [Package.Manifest] {
+        swiftExecutable: Swift.String,
+        load: @escaping @Sendable (Package.Manager, Swift.String) throws(Package.Manager.Error) -> Loaded
+    ) async throws(Self.Error) -> [Loaded] {
         let exec = swiftExecutable
         do {
             return try await withThrowingTaskGroup(
-                of: (Swift.Int, Package.Manifest).self
+                of: (Swift.Int, Loaded).self
             ) { group in
                 for (offset, directory) in chunk.enumerated() {
                     group.addTask {
                         let manifest = try loadManifest(
                             packageDirectory: directory,
-                            swiftExecutable: exec
+                            swiftExecutable: exec,
+                            load: load
                         )
                         return (offset, manifest)
                     }
                 }
-                var indexed: [(Swift.Int, Package.Manifest)] = []
+                var indexed: [(Swift.Int, Loaded)] = []
                 for try await pair in group {
                     indexed.append(pair)
                 }
