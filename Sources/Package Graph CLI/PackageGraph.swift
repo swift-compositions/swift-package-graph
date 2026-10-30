@@ -1,5 +1,7 @@
 internal import Command
+internal import File_System
 internal import Package_Graph
+internal import Package_Graph_Rewrite
 internal import Paths
 
 #if canImport(Darwin)
@@ -21,6 +23,7 @@ enum PackageGraph: Command.`Protocol`, Equatable {
     case dependentsOf(DependentsOf)
     case dependenciesOf(DependenciesOf)
     case traitMismatches(TraitMismatches)
+    case rewrite(Rewrite)
 }
 
 extension PackageGraph {
@@ -82,6 +85,12 @@ extension PackageGraph {
                     initial: { TraitMismatches() },
                     map: Self.traitMismatches
                 )
+                Command.Subcommand.Case(
+                    "rewrite",
+                    help: .init(abstract: "Version branch dependencies and drop root trait unions (dry run unless --write)."),
+                    initial: { Rewrite() },
+                    map: Self.rewrite
+                )
             }
         }
     }
@@ -119,6 +128,10 @@ extension PackageGraph {
         case .traitMismatches(var c):
             try await c.run()
             self = .traitMismatches(c)
+
+        case .rewrite(var c):
+            try await c.run()
+            self = .rewrite(c)
         }
     }
 }
@@ -180,6 +193,10 @@ private enum Names {}
 extension Names {
     static let root: Argument.Name = .long(Argument.Name.Long(_unchecked: "root"))
     static let depth: Argument.Name = .long(Argument.Name.Long(_unchecked: "depth"))
+    static let search: Argument.Name = .long(Argument.Name.Long(_unchecked: "search-depth"))
+    static let version: Argument.Name = .long(Argument.Name.Long(_unchecked: "version"))
+    static let write: Argument.Name = .long(Argument.Name.Long(_unchecked: "write"))
+    static let organizations: Argument.Name = .long(Argument.Name.Long(_unchecked: "organizations"))
 }
 
 extension PackageGraph {
@@ -573,9 +590,11 @@ extension Main {
 extension PackageGraph {
     struct TraitMismatches: Command.`Protocol`, Equatable {
         var root: Swift.String
+        var depth: Swift.Int
 
-        init(root: Swift.String = "") {
+        init(root: Swift.String = "", depth: Swift.Int = 3) {
             self.root = root
+            self.depth = depth
         }
     }
 }
@@ -595,6 +614,11 @@ extension PackageGraph.TraitMismatches {
                 name: Names.root,
                 help: .init(abstract: "Workspace root (default $PWD).")
             )
+            Command.Option(
+                \.depth,
+                name: Names.search,
+                help: .init(abstract: "How many directory levels below the root to search for packages (default 3).")
+            )
         }
     }
 
@@ -605,7 +629,12 @@ extension PackageGraph.TraitMismatches {
         let evaluations: [Package.Manifest.Evaluation]
         let failures: [Paths.Path]
         do throws(Package.Workspace.Error) {
-            (evaluations, failures) = try await Package.Workspace.evaluations(at: rootPath)
+            let loaded = try await Package.Workspace.evaluations(
+                at: rootPath,
+                configuration: .init(maxDepth: depth)
+            )
+            evaluations = loaded.evaluations.map(\.evaluation)
+            failures = loaded.failures
         } catch {
             PackageGraph.printError("package-graph: workspace error (\(error.kind)): \(error.detail)")
             PackageGraph.platformExit(2)
@@ -640,6 +669,154 @@ extension PackageGraph.TraitMismatches {
             "\(evaluations.count) packages, \(failures.count) not evaluated, \(mismatches.count) mismatches, \(missing) that miss a dependency"
         )
         if missing > 0 || !failures.isEmpty {
+            PackageGraph.platformExit(1)
+        }
+    }
+}
+
+extension PackageGraph {
+    struct Rewrite: Command.`Protocol`, Equatable {
+        var root: Swift.String
+        var depth: Swift.Int
+        var version: Swift.String
+        var organizations: Swift.String
+        var write: Swift.Bool
+
+        init(
+            root: Swift.String = "",
+            depth: Swift.Int = 3,
+            version: Swift.String = "0.0.100",
+            organizations: Swift.String = "",
+            write: Swift.Bool = false
+        ) {
+            self.root = root
+            self.depth = depth
+            self.version = version
+            self.organizations = organizations
+            self.write = write
+        }
+    }
+}
+
+extension PackageGraph.Rewrite {
+    static var configuration: Command.Configuration {
+        Command.Configuration(
+            name: "rewrite",
+            abstract: "Version branch dependencies and drop root trait unions (dry run unless --write)."
+        )
+    }
+
+    static var schema: Command.Schema.Definition<Self> {
+        Command.Schema.Definition<Self> {
+            Command.Option(
+                \.root,
+                name: Names.root,
+                help: .init(abstract: "Workspace root (default $PWD).")
+            )
+            Command.Option(
+                \.depth,
+                name: Names.search,
+                help: .init(abstract: "How many directory levels below the root to search for packages (default 3).")
+            )
+            Command.Option(
+                \.version,
+                name: Names.version,
+                help: .init(abstract: "The development version required with .upToNextMinor(from:) (default 0.0.100).")
+            )
+            Command.Option(
+                \.organizations,
+                name: Names.organizations,
+                help: .init(
+                    abstract: "The organizations to version, as the JSON array `institute organizations` prints (required)."
+                )
+            )
+            Command.Flag(
+                \.write,
+                name: Names.write,
+                help: .init(abstract: "Write the rewritten manifests; without it, only report.")
+            )
+        }
+    }
+
+    /// Prints one line per package it changes or cannot finish, and exits 1 when a manifest could
+    /// not be evaluated, read or written, or when a branch dependency was left unreached.
+    mutating func run() async throws(Command.Error) {
+        guard let organizations = Package.Manifest.Rewrite.organizations(parsing: organizations) else {
+            PackageGraph.printError(
+                "package-graph: --organizations must be a non-empty JSON array of organization names, "
+                    + "as `institute organizations` prints"
+            )
+            PackageGraph.platformExit(64)
+        }
+        let rootPath = PackageGraph.resolveRoot(root)
+        let loaded: (evaluations: [(directory: Paths.Path, evaluation: Package.Manifest.Evaluation)], failures: [Paths.Path])
+        do throws(Package.Workspace.Error) {
+            loaded = try await Package.Workspace.evaluations(at: rootPath, configuration: .init(maxDepth: depth))
+        } catch {
+            PackageGraph.printError("package-graph: workspace error (\(error.kind)): \(error.detail)")
+            PackageGraph.platformExit(2)
+        }
+        let mismatches = Package.Trait.Mismatch.all(in: loaded.evaluations.map(\.evaluation))
+        var problems = loaded.failures.count
+        var totals = (packages: 0, versioned: 0, removed: 0, conditioned: 0, retained: 0)
+        for failure in loaded.failures {
+            print("not evaluated: \(failure.string)")
+        }
+        for (directory, evaluation) in loaded.evaluations {
+            let plan = Package.Manifest.Rewrite(
+                evaluation: evaluation,
+                mismatches: mismatches,
+                version: version,
+                organizations: organizations
+            )
+            let path = directory / "Package.swift"
+            let source: Swift.String
+            do throws(Either<File.System.Read.Full.Error, Never>) {
+                source = try File(path).read.full { bytes in
+                    var storage: [Byte] = []
+                    storage.reserveCapacity(bytes.count)
+                    for index in bytes.indices { storage.append(bytes[index]) }
+                    return Swift.String(decoding: storage, as: Swift.UTF8.self)
+                }
+            } catch {
+                print("not read: \(path.string): \(error)")
+                problems += 1
+                continue
+            }
+            let outcome = plan.apply(to: source)
+            var notes: [Swift.String] = []
+            if outcome.versioned > 0 { notes.append("versioned \(outcome.versioned)") }
+            if !outcome.removed.isEmpty { notes.append("removed \(outcome.removed.sorted().joined(separator: ", "))") }
+            if !outcome.conditioned.isEmpty { notes.append("conditioned \(outcome.conditioned.sorted().joined(separator: ", "))") }
+            if !plan.retained.isEmpty { notes.append("left for a nested test package: \(plan.retained.sorted().joined(separator: ", "))") }
+            if !outcome.unreached.isEmpty {
+                notes.append("UNREACHED \(outcome.unreached.sorted().joined(separator: ", "))")
+                problems += 1
+            }
+            if outcome.source != source {
+                totals.packages += 1
+                if write {
+                    do throws(File.System.Write.Atomic.Error) {
+                        try File(path).write.atomic(outcome.source)
+                    } catch {
+                        print("not written: \(path.string): \(error)")
+                        problems += 1
+                        continue
+                    }
+                }
+            }
+            totals.versioned += outcome.versioned
+            totals.removed += outcome.removed.count
+            totals.conditioned += outcome.conditioned.count
+            totals.retained += plan.retained.count
+            if !notes.isEmpty {
+                print("\(evaluation.name.underlying): \(notes.joined(separator: "; "))")
+            }
+        }
+        print(
+            "\(loaded.evaluations.count) packages, \(totals.packages) changed\(write ? "" : " (dry run)"), \(totals.versioned) versioned, \(totals.removed) removed, \(totals.conditioned) conditioned, \(totals.retained) left for nested test packages, \(problems) problems"
+        )
+        if problems > 0 {
             PackageGraph.platformExit(1)
         }
     }

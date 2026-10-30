@@ -55,14 +55,17 @@ extension Package.Workspace {
     }
 
     /// The trait-aware evaluation of every package under `root`, found as `discover` finds them,
-    /// and the directories whose manifest could not be evaluated.
+    /// each with its package directory, and the directories whose manifest could not be evaluated.
     ///
     /// Unlike `discover`, one manifest that fails to evaluate does not fail the rest: an audit
     /// reports it instead, so that a clean result cannot hide packages it never read.
     public static func evaluations(
         at root: Paths.Path,
         configuration: Configuration = .init()
-    ) async throws(Self.Error) -> (evaluations: [Package.Manifest.Evaluation], failures: [Paths.Path]) {
+    ) async throws(Self.Error) -> (
+        evaluations: [(directory: Paths.Path, evaluation: Package.Manifest.Evaluation)],
+        failures: [Paths.Path]
+    ) {
         guard directoryExists(at: root) else {
             throw .init(kind: .rootDoesNotExist, detail: root.string)
         }
@@ -85,11 +88,11 @@ extension Package.Workspace {
                 Swift.Result { () throws(Package.Manager.Error) in try manager.evaluation(at: directory) }
             }
         )
-        var evaluations: [Package.Manifest.Evaluation] = []
+        var evaluations: [(directory: Paths.Path, evaluation: Package.Manifest.Evaluation)] = []
         var failures: [Paths.Path] = []
         for (directory, result) in Swift.zip(packageDirectories, results) {
             switch result {
-            case .success(let evaluation): evaluations.append(evaluation)
+            case .success(let evaluation): evaluations.append((directory, evaluation))
             case .failure: failures.append(directory)
             }
         }

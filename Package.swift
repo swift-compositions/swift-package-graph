@@ -13,6 +13,7 @@ let package = Package(
     ],
     products: [
         .library(name: "Package Graph", targets: ["Package Graph"]),
+        .library(name: "Package Graph Rewrite", targets: ["Package Graph Rewrite"]),
         .executable(name: "package-graph", targets: ["Package Graph CLI"]),
     ],
     dependencies: [
@@ -30,6 +31,7 @@ let package = Package(
         .package(url: "https://github.com/swift-compositions/swift-file-system.git", branch: "main"),
         .package(url: "https://github.com/swift-compositions/swift-paths.git", branch: "main"),
         .package(url: "https://github.com/swift-compositions/swift-arguments.git", branch: "main"),
+        .package(url: "https://github.com/swiftlang/swift-syntax.git", "604.0.0"..<"605.0.0"),
         .package(url: "https://github.com/swift-atoms/swift-ascii.git", branch: "main", traits: ["Coder", "Parser", "Serializer"]),
         .package(url: "https://github.com/swift-atoms/swift-coder.git", branch: "main", traits: ["Carrier", "Map"]),
         .package(url: "https://github.com/swift-atoms/swift-ratio.git", branch: "main", traits: ["Bit", "Ordinal", "Difference"]),
@@ -49,11 +51,23 @@ let package = Package(
             ],
             path: "Sources/Package Graph"
         ),
+        .target(
+            name: "Package Graph Rewrite",
+            dependencies: [
+                "Package Graph",
+                .product(name: "SwiftSyntax", package: "swift-syntax"),
+                .product(name: "SwiftParser", package: "swift-syntax"),
+                .product(name: "SwiftSyntaxBuilder", package: "swift-syntax"),
+            ],
+            path: "Sources/Package Graph Rewrite"
+        ),
         .executableTarget(
             name: "Package Graph CLI",
             dependencies: [
                 "Package Graph",
+                "Package Graph Rewrite",
                 .product(name: "Command", package: "swift-arguments"),
+                .product(name: "File System", package: "swift-file-system"),
             ],
             path: "Sources/Package Graph CLI"
         ),
@@ -63,6 +77,14 @@ let package = Package(
                 "Package Graph",
                 .product(name: "Environment", package: "swift-environment"),
                 .product(name: "File System", package: "swift-file-system"),
+            ]
+        ),
+        .testTarget(
+            name: "Package Graph Rewrite Tests",
+            dependencies: [
+                "Package Graph Rewrite",
+                .product(name: "SwiftSyntax", package: "swift-syntax"),
+                .product(name: "SwiftParser", package: "swift-syntax"),
             ]
         ),
     ],
