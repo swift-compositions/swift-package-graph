@@ -44,7 +44,6 @@ See the [full design rationale](https://github.com/swift-institute/Research/blob
 
 ## Related packages
 
-- [swift-impact](https://github.com/swift-compositions/swift-impact) — orchestrates `swift build` against the dependents this graph identifies, for downstream-impact analysis on package changes.
 - [swift-dependency-analysis](https://github.com/swift-compositions/swift-dependency-analysis) — archived predecessor; superseded by this package.
 
 ## License
