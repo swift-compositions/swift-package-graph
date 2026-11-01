@@ -5,11 +5,11 @@ extension Package {
 
     public struct Workspace: ~Copyable, Swift.Sendable {
 
-        public let root: Paths.Path
+        public let root: Path::Path
 
         public let manifests: [Package.Manifest]
 
-        public init(root: Paths.Path, manifests: [Package.Manifest]) {
+        public init(root: Path::Path, manifests: [Package.Manifest]) {
             self.root = root
             self.manifests = manifests
         }
@@ -19,7 +19,7 @@ extension Package {
 extension Package.Workspace {
 
     public static func discover(
-        at root: Paths.Path,
+        at root: Path::Path,
         configuration: Configuration = .init()
     ) async throws(Self.Error) -> Self {
         guard directoryExists(at: root) else {
@@ -60,11 +60,11 @@ extension Package.Workspace {
     /// Unlike `discover`, one manifest that fails to evaluate does not fail the rest: an audit
     /// reports it instead, so that a clean result cannot hide packages it never read.
     public static func evaluations(
-        at root: Paths.Path,
+        at root: Path::Path,
         configuration: Configuration = .init()
     ) async throws(Self.Error) -> (
-        evaluations: [(directory: Paths.Path, evaluation: Package.Manifest.Evaluation)],
-        failures: [Paths.Path]
+        evaluations: [(directory: Path::Path, evaluation: Package.Manifest.Evaluation)],
+        failures: [Path::Path]
     ) {
         guard directoryExists(at: root) else {
             throw .init(kind: .rootDoesNotExist, detail: root.string)
@@ -88,8 +88,8 @@ extension Package.Workspace {
                 Swift.Result { () throws(Package.Manager.Error) in try manager.evaluation(at: directory) }
             }
         )
-        var evaluations: [(directory: Paths.Path, evaluation: Package.Manifest.Evaluation)] = []
-        var failures: [Paths.Path] = []
+        var evaluations: [(directory: Path::Path, evaluation: Package.Manifest.Evaluation)] = []
+        var failures: [Path::Path] = []
         for (directory, result) in Swift.zip(packageDirectories, results) {
             switch result {
             case .success(let evaluation): evaluations.append((directory, evaluation))
@@ -102,7 +102,7 @@ extension Package.Workspace {
 
 extension Package.Workspace {
 
-    private static func directoryExists(at path: Paths.Path) -> Swift.Bool {
+    private static func directoryExists(at path: Path::Path) -> Swift.Bool {
         do throws(File.Directory.Contents.Error) {
             _ = try File.Directory(path).entries()
             return true
@@ -111,16 +111,16 @@ extension Package.Workspace {
         }
     }
 
-    private static func hasManifest(in directory: Paths.Path) -> Swift.Bool {
+    private static func hasManifest(in directory: Path::Path) -> Swift.Bool {
         File.System.Stat.isFile(at: directory / "Package.swift")
     }
 
     private static func findPackageDirectories(
-        under root: Paths.Path,
+        under root: Path::Path,
         maxDepth: Swift.Int
-    ) -> [Paths.Path] {
-        var found: [Paths.Path] = []
-        var queue: [(path: Paths.Path, depth: Swift.Int)] = [(root, 0)]
+    ) -> [Path::Path] {
+        var found: [Path::Path] = []
+        var queue: [(path: Path::Path, depth: Swift.Int)] = [(root, 0)]
 
         while !queue.isEmpty {
             let (current, depth) = queue.removeFirst()
@@ -145,7 +145,7 @@ extension Package.Workspace {
                 else { continue }
 
                 let component: File.Path.Component
-                do throws(Paths.Path.Component.Error) {
+                do throws(Path::Path.Component.Error) {
                     component = try entry.name.asPathComponent()
                 } catch {
                     continue
@@ -160,7 +160,7 @@ extension Package.Workspace {
 extension Package.Workspace {
 
     private static func loadManifest<Loaded>(
-        packageDirectory: Paths.Path,
+        packageDirectory: Path::Path,
         swiftExecutable: Swift.String,
         load: (Package.Manager, Swift.String) throws(Package.Manager.Error) -> Loaded
     ) throws(Self.Error) -> Loaded {
@@ -230,7 +230,7 @@ extension Package.Workspace {
     }
 
     private static func loadManifests<Loaded: Swift.Sendable>(
-        packageDirectories: [Paths.Path],
+        packageDirectories: [Path::Path],
         swiftExecutable: Swift.String,
         concurrencyBound: Swift.Int,
         load: @escaping @Sendable (Package.Manager, Swift.String) throws(Package.Manager.Error) -> Loaded
@@ -248,7 +248,7 @@ extension Package.Workspace {
     }
 
     private static func loadChunk<Loaded: Swift.Sendable>(
-        _ chunk: [Paths.Path],
+        _ chunk: [Path::Path],
         swiftExecutable: Swift.String,
         load: @escaping @Sendable (Package.Manager, Swift.String) throws(Package.Manager.Error) -> Loaded
     ) async throws(Self.Error) -> [Loaded] {

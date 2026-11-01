@@ -6,12 +6,12 @@ extension Package.Workspace {
 
         public var maxConcurrentLoads: Swift.Int
 
-        public var swiftExecutable: Paths.Path?
+        public var swiftExecutable: Path::Path?
 
         public init(
             maxDepth: Swift.Int = 2,
             maxConcurrentLoads: Swift.Int = 8,
-            swiftExecutable: Paths.Path? = nil
+            swiftExecutable: Path::Path? = nil
         ) {
             self.maxDepth = maxDepth
             self.maxConcurrentLoads = maxConcurrentLoads

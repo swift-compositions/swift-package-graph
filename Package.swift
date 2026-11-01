@@ -29,7 +29,7 @@ let package = Package(
         ),
         .package(url: "https://github.com/swift-compositions/swift-environment.git", branch: "main"),
         .package(url: "https://github.com/swift-compositions/swift-file-system.git", branch: "main"),
-        .package(url: "https://github.com/swift-compositions/swift-paths.git", branch: "main"),
+        .package(url: "https://github.com/swift-atoms/swift-path.git", branch: "main"),
         .package(url: "https://github.com/swift-compositions/swift-arguments.git", branch: "main"),
         .package(url: "https://github.com/swiftlang/swift-syntax.git", "604.0.0"..<"605.0.0"),
         .package(url: "https://github.com/swift-atoms/swift-ascii.git", branch: "main", traits: ["Coder", "Parser", "Serializer"]),
@@ -47,7 +47,7 @@ let package = Package(
                 .product(name: "SPM Standard", package: "swift-spm-standard"),
                 .product(name: "Package Manager", package: "swift-package-manager"),
                 .product(name: "File System", package: "swift-file-system"),
-                .product(name: "Paths", package: "swift-paths"),
+                .product(name: "Path", package: "swift-path"),
             ],
             path: "Sources/Package Graph"
         ),

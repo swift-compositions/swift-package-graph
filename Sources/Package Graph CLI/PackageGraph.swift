@@ -2,7 +2,7 @@ internal import Command
 internal import File_System
 internal import Package_Graph
 internal import Package_Graph_Rewrite
-internal import Paths
+internal import Path
 
 #if canImport(Darwin)
     internal import Darwin
@@ -138,7 +138,7 @@ extension PackageGraph {
 
 extension PackageGraph {
 
-    fileprivate static func loadGraph(at root: Paths.Path) async -> Package.Graph {
+    fileprivate static func loadGraph(at root: Path::Path) async -> Package.Graph {
         do {
             let workspace = try await Package.Workspace.discover(at: root)
             return try Package.Graph(workspace)
@@ -154,15 +154,15 @@ extension PackageGraph {
         }
     }
 
-    fileprivate static func resolveRoot(_ override: Swift.String) -> Paths.Path {
+    fileprivate static func resolveRoot(_ override: Swift.String) -> Path::Path {
         let rootString: Swift.String
         if override.isEmpty {
             rootString = unsafe currentWorkingDirectory()
         } else {
             rootString = override
         }
-        do throws(Paths.Path.Error) {
-            return try Paths.Path(rootString)
+        do throws(Path::Path.Error) {
+            return try Path::Path(rootString)
         } catch {
             printError("package-graph: invalid root path '\(rootString)': \(error)")
             platformExit(2)
@@ -627,7 +627,7 @@ extension PackageGraph.TraitMismatches {
     mutating func run() async throws(Command.Error) {
         let rootPath = PackageGraph.resolveRoot(root)
         let evaluations: [Package.Manifest.Evaluation]
-        let failures: [Paths.Path]
+        let failures: [Path::Path]
         do throws(Package.Workspace.Error) {
             let loaded = try await Package.Workspace.evaluations(
                 at: rootPath,
@@ -749,7 +749,7 @@ extension PackageGraph.Rewrite {
             PackageGraph.platformExit(64)
         }
         let rootPath = PackageGraph.resolveRoot(root)
-        let loaded: (evaluations: [(directory: Paths.Path, evaluation: Package.Manifest.Evaluation)], failures: [Paths.Path])
+        let loaded: (evaluations: [(directory: Path::Path, evaluation: Package.Manifest.Evaluation)], failures: [Path::Path])
         do throws(Package.Workspace.Error) {
             loaded = try await Package.Workspace.evaluations(at: rootPath, configuration: .init(maxDepth: depth))
         } catch {

@@ -1,2 +1,2 @@
-@_exported public import Paths
+@_exported public import Path
 @_exported public import SPM_Standard

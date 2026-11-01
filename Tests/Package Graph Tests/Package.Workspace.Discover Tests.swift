@@ -1,6 +1,6 @@
 import Environment
 import File_System
-import Paths
+import Path
 import Testing
 
 @testable import Package_Graph
@@ -109,7 +109,7 @@ extension `Package.Workspace.discover`.Integration {
 
     @Test
     func `nonexistent root throws .rootDoesNotExist`() async throws {
-        let root = try Paths.Path(
+        let root = try Path::Path(
             "/tmp/this-path-does-not-exist-\(Swift.Int.random(in: 0...Swift.Int.max))"
         )
         do throws(Package.Workspace.Error) {
@@ -134,30 +134,30 @@ extension `Package.Workspace.discover`.Integration {
     }
 }
 
-private func makeTempDirectory() throws -> Paths.Path {
+private func makeTempDirectory() throws -> Path::Path {
     let suffix = Swift.String(Swift.Int.random(in: 0...Swift.Int.max), radix: 36)
     let environment = Environment.Snapshot.current()
-    let base = try Paths.Path(environment["TMPDIR"] ?? environment["TEMP"] ?? "/tmp")
-    let path = base / Paths.Path.Component(stringLiteral: "package-graph-tests-\(suffix)")
+    let base = try Path::Path(environment["TMPDIR"] ?? environment["TEMP"] ?? "/tmp")
+    let path = base / Path::Path.Component(stringLiteral: "package-graph-tests-\(suffix)")
     let dir = File.Directory(path)
     try dir.create.recursive()
     return path
 }
 
-private func deleteTempDirectory(_ path: Paths.Path) {
+private func deleteTempDirectory(_ path: Path::Path) {
     let dir = File.Directory(path)
     try? dir.delete.recursive()
 }
 
 private func writePackage(
-    atDirectory directory: Paths.Path,
+    atDirectory directory: Path::Path,
     name: Swift.String,
     dependencies: [(localName: Swift.String, relativePath: Swift.String)]
 ) throws {
     let dir = File.Directory(directory)
     try dir.create.recursive()
 
-    let sourcesDir = directory / "Sources" / Paths.Path.Component(stringLiteral: name)
+    let sourcesDir = directory / "Sources" / Path::Path.Component(stringLiteral: name)
     let sourcesDirHandle = File.Directory(sourcesDir)
     try sourcesDirHandle.create.recursive()
 
