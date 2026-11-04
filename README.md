@@ -1,51 +1,17 @@
 # swift-package-graph
 
-Package-level dependency graph queries for local SwiftPM workspaces.
+Use this package when you have a folder of local SwiftPM packages and need to know how they depend on each other: what a change to one package affects, in what order to build them, or where the cycles are. Start from `Package.Workspace.discover(at:configuration:)` and build a `Package.Graph` from the result. Use `Package.Trait.Mismatch.all(in:)` to find trait requests that SwiftPM's resolver never sees, and the `Package Graph Rewrite` product to move branch dependencies to versions with `Package.Manifest.Rewrite`. The `package-graph` executable runs the same queries from the command line. The manifest types themselves come from swift-spm-standard.
 
-Given a directory containing one or more SwiftPM packages, `swift-package-graph` discovers them, loads their manifests via `swift package dump-package`, and builds a typed dependency graph. Consumers query the graph for forward dependencies, reverse dependents, transitive closures, topological order, cycles, strongly connected components, or GraphViz visualization.
+## Laws
 
-The library lives at `Package Graph`; the executable `package-graph` provides the queries from the command line.
-
-## Library use
-
-```swift
-import Package_Graph
-
-let workspace = try await Package.Workspace.discover(at: workspaceRoot)
-let graph = try Package.Graph(workspace)
-
-// What depends on swift-buffer?
-let dependents = graph.directDependents(of: "swift-buffer")
-
-// What's the full transitive closure?
-let transitive = graph.transitiveDependents(of: "swift-buffer", depth: .max)
-```
-
-## CLI use
-
-```sh
-# From a workspace root:
-package-graph dependents-of swift-buffer --depth 2
-package-graph dependencies-of swift-array
-package-graph topo
-package-graph cycles
-package-graph dot -o ecosystem.dot
-```
-
-## Architecture
-
-L4 Composition. Depends on:
-
-- L2: `swift-graph` (Graph.Sequential + traversal algorithms), `swift-path`, `swift-time`.
-- L3: `swift-spm-standard` (SwiftPM `Package.Manifest` + `Package.Dependency` types).
-- L4: `swift-process` (spawn `swift package dump-package`), `swift-file-system` (walk workspace), `swift-json` (decode manifest output), `swift-async` (concurrent loading), `swift-console` (CLI output).
-
-See the [full design rationale](https://github.com/swift-institute/Research/blob/main/Packages/swift-package-graph/design.md) and the parent research doc [downstream-impact-ci-for-swiftpm-ecosystems.md](https://github.com/swift-institute/Research/blob/main/downstream-impact-ci-for-swiftpm-ecosystems.md) for the use case context.
-
-## Related packages
-
-- [swift-dependency-analysis](https://github.com/swift-compositions/swift-dependency-analysis) — archived predecessor; superseded by this package.
-
-## License
-
-Apache 2.0. See `LICENSE.md`.
+- Discovery walks the folder breadth first, two levels below the root by default, with the root itself at level zero. A folder that holds a `Package.swift` is a package and is not searched further, so packages nested inside another package are not found. Folders whose names start with a dot are skipped.
+- `Package.Workspace.discover(at:configuration:)` fails as a whole when one manifest can't be loaded. `Package.Workspace.evaluations(at:configuration:)` keeps going and returns the folders it could not evaluate. Manifests load at most 8 at a time by default, and always at least one.
+- A dependency on a package outside the workspace still counts in `Package.Graph.directDependencies(of:)` and `Package.Graph.transitiveDependencies(of:)`. `Package.Graph.dot()`, `Package.Graph.cycles()` and `Package.Graph.topologicalOrder()` only see packages in the workspace.
+- `Package.Graph.transitiveDependents(of:depth:)` returns one wave per distance. A package appears once, in the wave of its shortest path, so in a diamond the top package is in wave 2 only. A depth below 1 returns no waves.
+- `Package.Graph.topologicalOrder()` lists dependencies before their dependents and throws when the graph has a cycle.
+- `Package.Graph.cycles()` reports every strongly connected component of two or more packages, plus any package that depends on itself. Names inside a cycle are sorted, and the cycles are sorted. `Package.Graph.dot()` sorts its nodes and edges by name, so its output is stable.
+- A dependency used only by a test target counts as unused for trait mismatches. A use with only a platform condition counts as unconditional. A trait request conditioned on a trait that enables the guarding trait, directly or through other traits, is not a mismatch.
+- A `Package.Manifest.Rewrite` built from an evaluation removes an unused dependency only when no target, test targets included, refers to it. Otherwise it keeps it in `retained`. The `default` trait is never conditioned.
+- Applying a rewrite versions only `branch: "main"` requirements of `url:` dependencies on github.com under the listed organizations, as `.upToNextMinor(from:)`. A dependency is matched by the last path component of its location, lowercased and without `.git`. Any other branch or revision on those organizations is left in place and reported in `unreached`. The rest of the manifest keeps its layout, and guard traits are written in sorted order.
+- `Package.Manifest.Rewrite.organizations(parsing:)` accepts only a non-empty JSON array of quoted names made of lowercase letters, digits and hyphens. An empty name, a trailing comma or any other shape returns nil.
+- `package-graph rewrite` is a dry run unless `--write` is given, requires `--organizations`, and versions to 0.0.100 by default. It exits with status 1 when a manifest could not be evaluated, read or written, or a branch dependency is left unreached. `package-graph trait-mismatches` exits with status 1 when a manifest could not be evaluated or a mismatch misses a dependency. These two search three levels deep by default. A workspace error exits with 2, a cycle in `topo` with 3, and a usage error with 64.
