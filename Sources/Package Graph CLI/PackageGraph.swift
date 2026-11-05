@@ -771,8 +771,8 @@ extension PackageGraph.Rewrite {
             )
             let path = directory / "Package.swift"
             let source: Swift.String
-            do throws(Either<File.System.Read.Full.Error, Never>) {
-                source = try File(path).read.full { bytes in
+            do {
+                source = try await File(path).read.full { (bytes: Swift.Span<Byte>) throws(Never) -> Swift.String in
                     var storage: [Byte] = []
                     storage.reserveCapacity(bytes.count)
                     for index in bytes.indices { storage.append(bytes[index]) }
@@ -796,8 +796,8 @@ extension PackageGraph.Rewrite {
             if outcome.source != source {
                 totals.packages += 1
                 if write {
-                    do throws(File.System.Write.Atomic.Error) {
-                        try File(path).write.atomic(outcome.source)
+                    do {
+                        try await File(path).write.atomic(outcome.source)
                     } catch {
                         print("not written: \(path.string): \(error)")
                         problems += 1
