@@ -18,7 +18,7 @@ struct `Package.Graph` {
 extension `Package.Graph`.Unit {
     @Test
     func `Empty workspace produces empty graph`() throws {
-        let workspace = try Package.Workspace(root: temporary(),manifests: [])
+        let workspace = try Package.Workspace(root: temporary(), manifests: [])
         let graph = try Package.Graph(workspace)
         #expect(graph.packages.isEmpty)
         #expect(graph.directDependents(of: "anything").isEmpty)
@@ -32,7 +32,7 @@ extension `Package.Graph`.Unit {
             toolsVersion: Version.Tools(major: 6, minor: 3),
             dependencies: []
         )
-        let workspace = try Package.Workspace(root: temporary(),manifests: [manifest])
+        let workspace = try Package.Workspace(root: temporary(), manifests: [manifest])
         let graph = try Package.Graph(workspace)
 
         #expect(graph.packages == ["swift-leaf"])
@@ -67,7 +67,7 @@ extension `Package.Graph`.Unit {
         )
         let c = Package.Manifest(name: "swift-c", toolsVersion: Version.Tools(major: 6, minor: 3))
 
-        let workspace = try Package.Workspace(root: temporary(),manifests: [a, b, c])
+        let workspace = try Package.Workspace(root: temporary(), manifests: [a, b, c])
         let graph = try Package.Graph(workspace)
 
         #expect(graph.directDependents(of: "swift-c") == ["swift-b"])
@@ -108,7 +108,7 @@ extension `Package.Graph`.Unit {
         )
         let d = Package.Manifest(name: "swift-d", toolsVersion: Version.Tools(major: 6, minor: 3))
 
-        let workspace = try Package.Workspace(root: temporary(),manifests: [a, b, c, d])
+        let workspace = try Package.Workspace(root: temporary(), manifests: [a, b, c, d])
         let graph = try Package.Graph(workspace)
 
         #expect(graph.directDependents(of: "swift-d") == ["swift-b", "swift-c"])
@@ -140,7 +140,7 @@ extension `Package.Graph`.Unit {
             ),
             .init(name: "d", toolsVersion: Version.Tools(major: 6, minor: 3)),
         ]
-        let workspace = try Package.Workspace(root: temporary(),manifests: manifests)
+        let workspace = try Package.Workspace(root: temporary(), manifests: manifests)
         let graph = try Package.Graph(workspace)
 
         let waves1 = graph.transitiveDependents(of: "d", depth: 1)
@@ -156,7 +156,7 @@ extension `Package.Graph`.Unit {
 
     @Test
     func `Empty graph: structural queries return empty results`() throws {
-        let workspace = try Package.Workspace(root: temporary(),manifests: [])
+        let workspace = try Package.Workspace(root: temporary(), manifests: [])
         let graph = try Package.Graph(workspace)
 
         #expect(graph.cycles().isEmpty)
@@ -185,7 +185,7 @@ extension `Package.Graph`.Unit {
         )
         let leaf = Package.Manifest(name: "swift-leaf", toolsVersion: Version.Tools(major: 6, minor: 3))
 
-        let workspace = try Package.Workspace(root: temporary(),manifests: [root, middle, leaf])
+        let workspace = try Package.Workspace(root: temporary(), manifests: [root, middle, leaf])
         let graph = try Package.Graph(workspace)
 
         let order = try graph.topologicalOrder()
@@ -215,7 +215,7 @@ extension `Package.Graph`.Unit {
         )
         let d = Package.Manifest(name: "d", toolsVersion: Version.Tools(major: 6, minor: 3))
 
-        let workspace = try Package.Workspace(root: temporary(),manifests: [a, b, c, d])
+        let workspace = try Package.Workspace(root: temporary(), manifests: [a, b, c, d])
         let graph = try Package.Graph(workspace)
 
         let order = try graph.topologicalOrder()
@@ -244,7 +244,7 @@ extension `Package.Graph`.Unit {
             dependencies: [.init(source: .path("../a"), name: "a", products: ["A"])]
         )
 
-        let workspace = try Package.Workspace(root: temporary(),manifests: [a, b])
+        let workspace = try Package.Workspace(root: temporary(), manifests: [a, b])
         let graph = try Package.Graph(workspace)
 
         #expect(throws: Package.Graph.Error.self) {
@@ -267,7 +267,7 @@ extension `Package.Graph`.Unit {
             toolsVersion: Version.Tools(major: 6, minor: 3),
             dependencies: [.init(source: .path("../leaf"), name: "leaf", products: ["Leaf"])]
         )
-        let workspace = try Package.Workspace(root: temporary(),manifests: [root, leaf])
+        let workspace = try Package.Workspace(root: temporary(), manifests: [root, leaf])
         let graph = try Package.Graph(workspace)
 
         #expect(graph.cycles().isEmpty)
@@ -286,7 +286,7 @@ extension `Package.Graph`.Unit {
             toolsVersion: Version.Tools(major: 6, minor: 3),
             dependencies: [.init(source: .path("../a"), name: "a", products: ["A"])]
         )
-        let workspace = try Package.Workspace(root: temporary(),manifests: [a, b])
+        let workspace = try Package.Workspace(root: temporary(), manifests: [a, b])
         let graph = try Package.Graph(workspace)
 
         let cycles = graph.cycles()
@@ -302,7 +302,7 @@ extension `Package.Graph`.Unit {
             toolsVersion: Version.Tools(major: 6, minor: 3),
             dependencies: [.init(source: .path("./a"), name: "a", products: ["A"])]
         )
-        let workspace = try Package.Workspace(root: temporary(),manifests: [a])
+        let workspace = try Package.Workspace(root: temporary(), manifests: [a])
         let graph = try Package.Graph(workspace)
 
         let cycles = graph.cycles()
@@ -324,7 +324,7 @@ extension `Package.Graph`.Unit {
             dependencies: [.init(source: .path("../middle"), name: "middle", products: ["Middle"])]
         )
 
-        let workspace = try Package.Workspace(root: temporary(),manifests: [root, middle, leaf])
+        let workspace = try Package.Workspace(root: temporary(), manifests: [root, middle, leaf])
         let graph = try Package.Graph(workspace)
 
         let sccs = graph.stronglyConnectedComponents()
@@ -347,7 +347,7 @@ extension `Package.Graph`.Unit {
             toolsVersion: Version.Tools(major: 6, minor: 3),
             dependencies: [.init(source: .path("../a"), name: "a", products: ["A"])]
         )
-        let workspace = try Package.Workspace(root: temporary(),manifests: [a, b])
+        let workspace = try Package.Workspace(root: temporary(), manifests: [a, b])
         let graph = try Package.Graph(workspace)
 
         let sccs = graph.stronglyConnectedComponents()
@@ -365,7 +365,7 @@ extension `Package.Graph`.Unit {
                 .init(source: .path("../swift-leaf"), name: "swift-leaf", products: ["Leaf"])
             ]
         )
-        let workspace = try Package.Workspace(root: temporary(),manifests: [root, leaf])
+        let workspace = try Package.Workspace(root: temporary(), manifests: [root, leaf])
         let graph = try Package.Graph(workspace)
 
         let expected = """
@@ -393,7 +393,7 @@ extension `Package.Graph`.Unit {
                 )
             ]
         )
-        let workspace = try Package.Workspace(root: temporary(),manifests: [local])
+        let workspace = try Package.Workspace(root: temporary(), manifests: [local])
         let graph = try Package.Graph(workspace)
 
         let expected = """
