@@ -15,7 +15,7 @@ extension `Package.Manifest.Rewrite` {
         conditions: [Swift.String: [Swift.String: Swift.Set<Swift.String>]] = [:]
     ) -> Package.Manifest.Rewrite.Outcome {
         Package.Manifest.Rewrite(
-            version: "0.0.100",
+            version: Version.Semantic(parsing: "0.0.100"),
             organizations: ["swift-atoms", "swift-molecules"],
             removals: removals,
             conditions: conditions
@@ -196,7 +196,7 @@ extension `Package.Manifest.Rewrite` {
         let plan = Package.Manifest.Rewrite(
             evaluation: evaluation,
             mismatches: Package.Trait.Mismatch.all(in: [evaluation]),
-            version: "0.0.100",
+            version: Version.Semantic(parsing: "0.0.100"),
             organizations: ["swift-atoms"]
         )
 

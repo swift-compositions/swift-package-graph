@@ -9,7 +9,7 @@ extension Package.Manifest {
 
         /// The version every `branch: "main"` dependency on `organizations` is required from, as
         /// `.upToNextMinor(from:)`; `nil` leaves requirements as they are.
-        public let version: Swift.String?
+        public let version: Version.Semantic?
 
         /// The GitHub organizations whose dependencies are versioned.
         public let organizations: Swift.Set<Swift.String>
@@ -26,7 +26,7 @@ extension Package.Manifest {
         public let retained: Swift.Set<Swift.String>
 
         public init(
-            version: Swift.String?,
+            version: Version.Semantic?,
             organizations: Swift.Set<Swift.String>,
             removals: Swift.Set<Swift.String> = [],
             conditions: [Swift.String: [Swift.String: Swift.Set<Swift.String>]] = [:],
@@ -49,7 +49,7 @@ extension Package.Manifest.Rewrite {
     public init(
         evaluation: Package.Manifest.Evaluation,
         mismatches: [Package.Trait.Mismatch],
-        version: Swift.String?,
+        version: Version.Semantic?,
         organizations: Swift.Set<Swift.String>
     ) {
         var referenced: Swift.Set<Swift.String> = []

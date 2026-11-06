@@ -103,7 +103,7 @@ extension Package.Manifest.Rewrite {
                 let branch = call.arguments[index]
                 call.arguments[index] = LabeledExprSyntax(
                     leadingTrivia: branch.leadingTrivia,
-                    expression: ExprSyntax(".upToNextMinor(from: \(literal: version))"),
+                    expression: ExprSyntax(".upToNextMinor(from: \(literal: version.description))"),
                     trailingComma: branch.trailingComma
                 )
                 self.versioned += 1

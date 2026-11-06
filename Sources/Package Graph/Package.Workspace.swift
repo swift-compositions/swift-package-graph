@@ -162,10 +162,10 @@ extension Package.Workspace {
     private static func loadManifest<Loaded>(
         packageDirectory: Path::Path,
         swiftExecutable: Swift.String,
-        load: (Package.Manager, Swift.String) throws(Package.Manager.Error) -> Loaded
+        load: (Package.Manager, File.Directory) throws(Package.Manager.Error) -> Loaded
     ) throws(Self.Error) -> Loaded {
         do throws(Package.Manager.Error) {
-            return try load(Package.Manager(executable: swiftExecutable), packageDirectory.string)
+            return try load(Package.Manager(executable: swiftExecutable), File.Directory(packageDirectory))
         } catch {
             switch error {
             case .execution:
@@ -233,7 +233,7 @@ extension Package.Workspace {
         packageDirectories: [Path::Path],
         swiftExecutable: Swift.String,
         concurrencyBound: Swift.Int,
-        load: @escaping @Sendable (Package.Manager, Swift.String) throws(Package.Manager.Error) -> Loaded
+        load: @escaping @Sendable (Package.Manager, File.Directory) throws(Package.Manager.Error) -> Loaded
     ) async throws(Self.Error) -> [Loaded] {
         var results: [Loaded] = []
         var index = 0
@@ -250,7 +250,7 @@ extension Package.Workspace {
     private static func loadChunk<Loaded: Swift.Sendable>(
         _ chunk: [Path::Path],
         swiftExecutable: Swift.String,
-        load: @escaping @Sendable (Package.Manager, Swift.String) throws(Package.Manager.Error) -> Loaded
+        load: @escaping @Sendable (Package.Manager, File.Directory) throws(Package.Manager.Error) -> Loaded
     ) async throws(Self.Error) -> [Loaded] {
         let exec = swiftExecutable
         do {

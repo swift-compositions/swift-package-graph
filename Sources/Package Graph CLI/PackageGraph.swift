@@ -748,6 +748,10 @@ extension PackageGraph.Rewrite {
             )
             PackageGraph.platformExit(64)
         }
+        guard let requiredVersion = Version.Semantic(parsing: version) else {
+            PackageGraph.printError("package-graph: --version must be a semantic version, such as 0.0.100")
+            PackageGraph.platformExit(64)
+        }
         let rootPath = PackageGraph.resolveRoot(root)
         let loaded: (evaluations: [(directory: Path::Path, evaluation: Package.Manifest.Evaluation)], failures: [Path::Path])
         do throws(Package.Workspace.Error) {
@@ -766,7 +770,7 @@ extension PackageGraph.Rewrite {
             let plan = Package.Manifest.Rewrite(
                 evaluation: evaluation,
                 mismatches: mismatches,
-                version: version,
+                version: requiredVersion,
                 organizations: organizations
             )
             let path = directory / "Package.swift"
