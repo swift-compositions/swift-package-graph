@@ -54,7 +54,7 @@ let package = Package(
         .target(
             name: "Package Graph Rewrite",
             dependencies: [
-                "Package Graph",
+                .target(name: "Package Graph"),
                 .product(name: "SwiftSyntax", package: "swift-syntax"),
                 .product(name: "SwiftParser", package: "swift-syntax"),
                 .product(name: "SwiftSyntaxBuilder", package: "swift-syntax"),
@@ -64,8 +64,8 @@ let package = Package(
         .executableTarget(
             name: "Package Graph CLI",
             dependencies: [
-                "Package Graph",
-                "Package Graph Rewrite",
+                .target(name: "Package Graph"),
+                .target(name: "Package Graph Rewrite"),
                 .product(name: "Command", package: "swift-arguments"),
                 .product(name: "File System", package: "swift-file-system"),
             ],
@@ -74,7 +74,7 @@ let package = Package(
         .testTarget(
             name: "Package Graph Tests",
             dependencies: [
-                "Package Graph",
+                .target(name: "Package Graph"),
                 .product(name: "Environment", package: "swift-environment"),
                 .product(name: "File System", package: "swift-file-system"),
             ]
@@ -82,7 +82,7 @@ let package = Package(
         .testTarget(
             name: "Package Graph Rewrite Tests",
             dependencies: [
-                "Package Graph Rewrite",
+                .target(name: "Package Graph Rewrite"),
                 .product(name: "SwiftSyntax", package: "swift-syntax"),
                 .product(name: "SwiftParser", package: "swift-syntax"),
             ]
