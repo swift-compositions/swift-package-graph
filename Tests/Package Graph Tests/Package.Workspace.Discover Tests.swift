@@ -109,7 +109,7 @@ extension `Package.Workspace.discover`.Integration {
 
     @Test
     func `nonexistent root throws .rootDoesNotExist`() async throws {
-        let root = try Path::Path(
+        let root = Path::Path(
             "/tmp/this-path-does-not-exist-\(Swift.Int.random(in: 0...Swift.Int.max))"
         )
         do throws(Package.Workspace.Error) {
